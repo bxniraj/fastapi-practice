@@ -6,7 +6,6 @@ from passlib.context import CryptContext
 from datetime import timedelta , datetime
 from fastapi.security import OAuth2PasswordBearer , OAuth2PasswordRequestForm
 import bcrypt , re , jwt
-from jose import jwt, JWTError
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -14,7 +13,6 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 
 # JWT
-
 def get_current_user(token: str = Depends(oauth2_scheme)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -27,13 +25,12 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         if email is None:
             raise credentials_exception
         token_data = schemas.TokenData(email=email)
-    except JWTError: 
+    except Exception as e: 
         raise credentials_exception
-
 
 # Login
 def login(data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    email = data.email
+    email = data.username
     password = data.password
     if not re.match(EMAIL_REGEX, email):
         raise HTTPException(status_code=400, detail="Invalid email format")

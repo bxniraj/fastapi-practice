@@ -1,4 +1,4 @@
-#!/Users/niraj/Desktop/ML/fastapi/env/bin/python3.11
+#!/Users/niraj/Desktop/ML/fastapi-practice/env/bin/python3.11
 # -*- coding: utf-8 -*-
 import re
 import sys
