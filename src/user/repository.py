@@ -4,34 +4,33 @@ from fastapi import  HTTPException, status , Depends
 from database import get_db , SECRET_KEY , ALGORITHM , PASSWORD_REGEX , EMAIL_REGEX, ACCESS_TOKEN_EXPIRE_MINUTES
 from passlib.context import CryptContext 
 from datetime import timedelta , datetime
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 import bcrypt , re , jwt
+from jose import JWTError
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 
-# JWT
-def get_current_user(token: str = Depends(oauth2_scheme)):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+# Verify Tokens
+
+def verify_token(token: str):
     try:
+
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email: str = payload.get("sub")
-        if email is None:
-            raise credentials_exception
-        token_data = schemas.TokenData(email=email)
-    except Exception as e: 
-        raise credentials_exception
+        return payload
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+        )
+
 
 # Login
-def login(data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    email = data.username
+def login(data: schemas.User, db: Session = Depends(get_db)):
+    email = data.email
     password = data.password
+
+
     if not re.match(EMAIL_REGEX, email):
         raise HTTPException(status_code=400, detail="Invalid email format")
 
@@ -39,7 +38,9 @@ def login(data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get
     if not re.match(PASSWORD_REGEX, password):
         raise HTTPException(status_code=400, detail="Invalid password format")
     
+
     user = db.query(models.User).filter(models.User.email == email).first()
+
     if user and pwd_context.verify(password, user.password):
         access_token = create_access_token(data={"sub": user.email})
         return {"access_token": access_token, "token_type": "bearer"}
@@ -48,12 +49,9 @@ def login(data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get
     
 
 # Function to generate JWT token
-def create_access_token(data: dict, expires_delta: timedelta = None):
+def create_access_token(data: dict):
     to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
@@ -65,8 +63,7 @@ def get_all(db: Session):
 
 # Register a new user
 def register_user(user: schemas.User, db: Session = Depends(get_db)):
-    db_user = create_user(user,db)
-    return db_user
+    return create_user(user,db)
 
 
 # Create
@@ -83,7 +80,7 @@ def create_user(user_request: schemas.User, db: Session):
         password=hashed_password.decode(),
         birth_date=user_request.birth_date
     )
-    db.add(user)
+    db.add(user) 
     db.commit()
     db.refresh(user)
     return user

@@ -4,6 +4,7 @@ from database import get_db
 from sqlalchemy.orm import Session
 
 
+
 def register(request: schemas.User, db: Session = Depends(get_db)):
     return repository.register_user(request,db)
 
