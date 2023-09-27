@@ -4,7 +4,7 @@ from fastapi import  HTTPException, status , Depends
 from database import get_db , SECRET_KEY , ALGORITHM , PASSWORD_REGEX , EMAIL_REGEX, ACCESS_TOKEN_EXPIRE_MINUTES
 from passlib.context import CryptContext 
 from datetime import timedelta , datetime
-from fastapi.security import OAuth2PasswordBearer , OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 import bcrypt , re , jwt
 
 
