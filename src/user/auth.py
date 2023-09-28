@@ -29,7 +29,7 @@ def login(data: schemas.User, db: Session = Depends(get_db)):
         access_token = create_token(data={"sub": user.email})
 
         return {'access_token' : access_token,
-                'refresh_token' : refresh_token,
+                # 'refresh_token' : refresh_token,
                 'token_type': 'Bearer' }
     else:
         raise HTTPException(status_code=401, detail="Incorrect email or password")
