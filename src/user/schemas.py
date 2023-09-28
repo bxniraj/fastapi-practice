@@ -8,5 +8,3 @@ class User(BaseModel):
     password: str
     birth_date: date
 
-class Token(BaseModel):
-    token: str

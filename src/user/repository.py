@@ -1,70 +1,11 @@
 from sqlalchemy.orm import Session
 from src.user import models , schemas
 from fastapi import  HTTPException, status , Depends
-from database import get_db , SECRET_KEY , ALGORITHM , PASSWORD_REGEX , EMAIL_REGEX, ACCESS_TOKEN_EXPIRE_MINUTES
-from passlib.context import CryptContext 
-from datetime import timedelta , datetime
-import bcrypt , re , jwt
-from jose import JWTError
-
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-
-# Verify Tokens
-
-def verify_token(token: str):
-    try:
-
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        return payload
-    except JWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-        )
-
-
-# Login
-def login(data: schemas.User, db: Session = Depends(get_db)):
-    email = data.email
-    password = data.password
-
-
-    if not re.match(EMAIL_REGEX, email):
-        raise HTTPException(status_code=400, detail="Invalid email format")
-
-    # Validate password format using regex
-    if not re.match(PASSWORD_REGEX, password):
-        raise HTTPException(status_code=400, detail="Invalid password format")
-    
-
-    user = db.query(models.User).filter(models.User.email == email).first()
-
-    if user and pwd_context.verify(password, user.password):
-        access_token = create_access_token(data={"sub": user.email})
-        return {"access_token": access_token, "token_type": "bearer"}
-    else:
-        raise HTTPException(status_code=401, detail="Incorrect email or password")
-    
-
-# Function to generate JWT token
-def create_access_token(data: dict):
-    to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-
+import bcrypt
 
 # Read all
 def get_all(db: Session):
     return db.query(models.User).all()
-
-
-# Register a new user
-def register_user(user: schemas.User, db: Session = Depends(get_db)):
-    return create_user(user,db)
-
 
 # Create
 def create_user(user_request: schemas.User, db: Session):
@@ -90,7 +31,7 @@ def get_user(id: int, db: Session):
     return db.query(models.User).filter(models.User.id == id).first()
 
 # Update
-def update_user(id: int, db: Session, request: schemas.User):
+def update_user(id: int, request: schemas.User, db: Session):
     user = db.query(models.User).filter(models.User.id == id).first()
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
