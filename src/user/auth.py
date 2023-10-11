@@ -68,9 +68,8 @@ def create_refresh_token(data:dict):
 def decode_token(authorization: str = Header(), db: Session = Depends(get_db)):
     
     try:
-        parts = authorization.split(' ')
-        verify = parts[1]
-
+        verify = authorization.split()[1]
+        
         # Decode
         payload = jwt.decode(verify, SECRET_KEY, algorithms=ALGORITHM)
 
